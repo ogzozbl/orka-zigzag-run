@@ -1,32 +1,7 @@
 # ZigzagRun — Orka Edition
 
 A hyper-casual browser game built in Unity 6 (URP), themed as a brand engagement piece for
-**Orka Holding** — the Turkish menswear group behind Damat, D'S Damat and Tween.
-
-One tap. The ball never stops. Tap to turn the corner, miss it and you fall.
-
-**Target platform: WebGL.** It runs in a browser, no install, no app store.
-
----
-
-## Why I built this
-
-Two reasons, one professional and one personal.
-
-**The professional one.** Brand awareness in retail usually means an ad someone skips. A
-hyper-casual game is the opposite — it is voluntary, it is short, and people replay it. If
-the brand lives inside the thing people are choosing to do, the impression is earned rather
-than bought. So the brief I set out to answer was: *how do you put a fashion brand in
-someone's hands for five minutes at a time?*
-
-**The personal one.** I want to work in the games industry. An internship at a fashion
-holding is not the obvious route into it, so I treated this project as the way to make it
-one — a chance to ship something real, end to end, and to have the scars to show for it.
-Everything here is mine: the mechanic, the procedural generation, the shader and pipeline
-work, the backend, the UI, and the two days I lost to a rendering bug I document further
-down. That last part turned out to be the most useful thing I learned all summer.
-
-### Making the brand inseparable from the game
+**Orka Holding** 
 
 The goal was never "clone Zigzag." It was to take a mechanic already proven to be
 replayable and bind the brand to it:
@@ -59,16 +34,6 @@ speckle pattern scattered across the path surfaces (the full investigation is
 internship on a fixed clock, that left a choice between spending the remaining time
 chasing a platform-specific graphics bug, or shipping on the platform where the game
 already looked right.
-
-Project management — Samet Bey — made the call to ship the web version. It was the correct
-one, and not only because of the bug:
-
-- **Zero friction.** A link opens the game. No store listing, no review process, no
-  install, no 25 USD developer account, no keystore to lose.
-- **It fits how the game would actually be shared.** A QR code in a store window or a link
-  in an internal message is exactly the distribution model a brand engagement piece wants.
-  Asking someone to install an app to play for three minutes loses most of them.
-- **Iteration is immediate.** A fix is a re-upload, not a store submission.
 
 The Android work is not wasted — the project still contains the mobile-specific fixes
 (touch handling, safe-area insets, ARM64/IL2CPP configuration) and can be switched back
