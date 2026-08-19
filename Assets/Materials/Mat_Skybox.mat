@@ -27,8 +27,8 @@ Material:
     m_Floats:
     - _Exponent: 1.6
     m_Colors:
-    - _BottomColor: {r: 0.13729882, g: 0.058799088, b: 0.32159877, a: 1}
-    - _HorizonColor: {r: 1, g: 0.30999875, b: 0.6399999, a: 1}
-    - _TopColor: {r: 0.23139876, g: 0.12159879, b: 0.5608, a: 1}
+    - _BottomColor: {r: 0.1372956, g: 0.05879654, b: 0.32159537, a: 1}
+    - _HorizonColor: {r: 1, g: 0.30999535, b: 0.6399999, a: 1}
+    - _TopColor: {r: 0.23139536, g: 0.12159539, b: 0.5608, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1

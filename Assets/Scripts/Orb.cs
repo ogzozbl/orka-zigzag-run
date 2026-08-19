@@ -166,10 +166,12 @@ public class Orb : MonoBehaviour
         Color gold = new Color(0.788f, 0.651f, 0.42f); // #C9A66B
         sharedMat = new Material(Shader.Find("Universal Render Pipeline/Lit"));
         sharedMat.SetColor("_BaseColor", gold);
-        sharedMat.SetFloat("_Metallic", 0.8f);
-        sharedMat.SetFloat("_Smoothness", 0.85f);
+        sharedMat.SetFloat("_Metallic", 0.3f);
+        sharedMat.SetFloat("_Smoothness", 0.35f);
+        sharedMat.SetFloat("_SpecularHighlights", 0f);
+        sharedMat.SetFloat("_EnvironmentReflections", 0f);
         sharedMat.EnableKeyword("_EMISSION");
-        sharedMat.SetColor("_EmissionColor", gold * 2f); // HDR — bloom bunu parlatır
+        sharedMat.SetColor("_EmissionColor", gold * 0.4f); // HDR değil — bloom kapalı, benek riski yok
         return sharedMat;
     }
 }
