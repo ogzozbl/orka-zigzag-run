@@ -44,7 +44,10 @@ public static class DustBurst
         var vel = ps.velocityOverLifetime;
         vel.enabled = true;
         vel.space = ParticleSystemSimulationSpace.World;
+        // Üç eksen de AYNI modda (TwoConstants) olmalı — Unity karışık mod kabul etmiyor
+        vel.x = new ParticleSystem.MinMaxCurve(0f, 0f);
         vel.y = new ParticleSystem.MinMaxCurve(-2.5f, -1f); // yer çekimi hissi
+        vel.z = new ParticleSystem.MinMaxCurve(0f, 0f);
 
         var psRenderer = go.GetComponent<ParticleSystemRenderer>();
         psRenderer.material = GetMaterial();

@@ -9,7 +9,6 @@ public class GoldTrail : MonoBehaviour
     static readonly Color gold = new Color(0.788f, 0.651f, 0.42f); // #C9A66B
 
     ParticleSystem ps;
-    ParticleSystem.EmissionModule emission;
     Transform worldRoot;
     BallController ball;
 
@@ -30,13 +29,16 @@ public class GoldTrail : MonoBehaviour
         var main = ps.main;
         main.simulationSpace = ParticleSystemSimulationSpace.Custom;
         main.customSimulationSpace = worldRoot;
-        main.startLifetime = 0.9f;
+        // İz kısa ömürlü ve seyrek: partiküller worldRoot uzayında sabitlendiği için
+        // yol boyunca birikiyor — uzun ömür/yüksek sayı olunca bloom'a girip ekranı
+        // beyaz bir lekeye çeviriyordu.
+        main.startLifetime = 0.5f;
         main.startSpeed = 0f;
-        main.startSize = new ParticleSystem.MinMaxCurve(0.1f, 0.22f);
+        main.startSize = new ParticleSystem.MinMaxCurve(0.06f, 0.13f);
         main.startColor = gold;
-        main.maxParticles = 500;
+        main.maxParticles = 120;
 
-        emission = ps.emission;
+        var emission = ps.emission;
         emission.rateOverTime = 40f;
         emission.enabled = false;
 
@@ -53,7 +55,7 @@ public class GoldTrail : MonoBehaviour
         var gradient = new Gradient();
         gradient.SetKeys(
             new[] { new GradientColorKey(gold, 0f), new GradientColorKey(gold, 1f) },
-            new[] { new GradientAlphaKey(0.85f, 0f), new GradientAlphaKey(0f, 1f) });
+            new[] { new GradientAlphaKey(0.45f, 0f), new GradientAlphaKey(0f, 1f) });
         colorOverLife.color = gradient;
 
         var psRenderer = go.GetComponent<ParticleSystemRenderer>();
@@ -66,19 +68,29 @@ public class GoldTrail : MonoBehaviour
 
     void Update()
     {
-        if (ball == null) return;
-        emission.enabled = ball.IsGameStarted;
-        if (ball.IsGameStarted)
+        if (ball == null || ps == null) return;
+
+        // Modülü her kare taze çekiyoruz (class alanında cache'lemiyoruz) — Play modunda
+        // script yeniden derlenirse (platform değişimi vb.) cache'li struct bozulup
+        // "Do not create your own module instances" hatasına yol açabiliyordu
+        // ball.IsGameStarted ölünce true kalmaya devam ediyor (sıfırlanmıyor) —
+        // ball.enabled ise Freeze()'de false olur, o yüzden ikisini birden kontrol
+        // ediyoruz. Aksi halde ölen topun tozu ekranda sonsuza kadar birikiyordu.
+        var emission = ps.emission;
+        bool active = ball.IsGameStarted && ball.enabled;
+        emission.enabled = active;
+        if (active)
         {
             // İz yoğunluğu hızla birlikte artar — oyuncu ivmelenmeyi gözle de hisseder
             float t = Mathf.InverseLerp(6f, ball.maxSpeed, ball.speed);
-            emission.rateOverTime = Mathf.Lerp(25f, 75f, t);
+            emission.rateOverTime = Mathf.Lerp(10f, 26f, t);
         }
     }
 
     // Orb toplama patlaması da aynı particle sistemini kullanır
     public void EmitBurst(Vector3 worldPos, int count)
     {
+        if (ps == null || worldRoot == null) return;
         var p = new ParticleSystem.EmitParams
         {
             position = worldRoot.InverseTransformPoint(worldPos)

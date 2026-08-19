@@ -47,9 +47,7 @@ public class BallController : MonoBehaviour
             // Tıklama bir UI butonunun/alanının üzerindeyse (SIRALAMA, GERİ, isim
             // kutusu vb.) oyun girdisi tetiklenmesin — aksi halde aynı tıklama hem
             // butona hem "dokun = başla/dön" girdisine aynı anda gidiyordu.
-            if (UnityEngine.EventSystems.EventSystem.current != null &&
-                UnityEngine.EventSystems.EventSystem.current.IsPointerOverGameObject())
-                return;
+            if (IsPointerOverUI()) return;
 
             Sfx.PlayTap();
             if (!isGameStarted)
@@ -57,6 +55,20 @@ public class BallController : MonoBehaviour
             else
                 SwitchDirection();
         }
+    }
+
+    // Mobilde IsPointerOverGameObject() parametresiz hali dokunmatikte güvenilmez —
+    // hangi parmağın sorulduğunu bilemez. Dokunmatikte aktif dokunuşun fingerId'siyle,
+    // masaüstünde parametresiz haliyle sormak gerekiyor.
+    static bool IsPointerOverUI()
+    {
+        var es = UnityEngine.EventSystems.EventSystem.current;
+        if (es == null) return false;
+
+        if (Input.touchCount > 0)
+            return es.IsPointerOverGameObject(Input.GetTouch(0).fingerId);
+
+        return es.IsPointerOverGameObject();
     }
 
     // Oyun bitince çağrılır: top olduğu yerde donar, dünya kaymayı bırakır.

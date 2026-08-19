@@ -5,9 +5,27 @@ using UnityEngine;
 public static class Sfx
 {
     const int sampleRate = 44100;
+    const string MutedKey = "ZigzagRun.Muted";
 
     static AudioSource source;
     static AudioClip tapClip, collectClip, deathClip, milestoneClip;
+    static bool? mutedCache;
+
+    // PlayerPrefs'te kalıcı — bir kez kapatınca sonraki oturumlarda da kapalı kalır
+    public static bool Muted
+    {
+        get
+        {
+            mutedCache ??= PlayerPrefs.GetInt(MutedKey, 0) == 1;
+            return mutedCache.Value;
+        }
+        set
+        {
+            mutedCache = value;
+            PlayerPrefs.SetInt(MutedKey, value ? 1 : 0);
+            PlayerPrefs.Save();
+        }
+    }
 
     static AudioSource Source
     {
@@ -26,24 +44,28 @@ public static class Sfx
 
     public static void PlayTap()
     {
+        if (Muted) return;
         if (tapClip == null) tapClip = MakeTone(520f, 0.06f, 16f);
         Source.PlayOneShot(tapClip, 0.5f);
     }
 
     public static void PlayCollect()
     {
+        if (Muted) return;
         if (collectClip == null) collectClip = MakeArpeggio(new[] { 740f, 988f, 1318f }, 0.07f);
         Source.PlayOneShot(collectClip, 0.6f);
     }
 
     public static void PlayDeath()
     {
+        if (Muted) return;
         if (deathClip == null) deathClip = MakeThud();
         Source.PlayOneShot(deathClip, 0.7f);
     }
 
     public static void PlayMilestone()
     {
+        if (Muted) return;
         if (milestoneClip == null) milestoneClip = MakeArpeggio(new[] { 523f, 659f, 784f, 1046f }, 0.06f);
         Source.PlayOneShot(milestoneClip, 0.5f);
     }

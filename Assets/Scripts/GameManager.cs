@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using UnityEngine.UI;
 using TMPro;
 
 public class GameManager : MonoBehaviour
@@ -57,6 +58,8 @@ public class GameManager : MonoBehaviour
     private int nextMilestoneIndex = 0;
     private string playerName = "PLAYER";
     private TextMeshProUGUI pickupHudValue;
+    private TextMeshProUGUI muteLabel;
+    private RectTransform uiRoot;   // çentik/delik altında kalmayan güvenli alan
 
     void Awake()
     {
@@ -65,6 +68,8 @@ public class GameManager : MonoBehaviour
 
     void Start()
     {
+        BuildSafeAreaRoot();
+
         // Marka tipografisi: Oswald Bold (TMP örnek paketindeki hazır SDF asset)
         scoreText.font = GameOverScreen.BrandFont;
         scoreText.color = scoreColor;
@@ -72,6 +77,7 @@ public class GameManager : MonoBehaviour
         GameOverScreen.ApplyOutline(scoreText, scoreOutline, 0.2f);
         pathGenerator = FindAnyObjectByType<PathGenerator>();
         BuildPickupHud();
+        BuildMuteButton();
 
         if (nameAskedThisSession)
         {
@@ -84,18 +90,35 @@ public class GameManager : MonoBehaviour
             // İsim onaylanana kadar top "dokun = başla" girdisini işlemesin
             nameAskedThisSession = true;
             InputLocked = true;
-            NameEntryScreen.Create((RectTransform)scoreText.canvas.transform, OnNameConfirmed, Accent);
+            NameEntryScreen.Create(uiRoot, OnNameConfirmed, Accent);
         }
+    }
+
+    // Canvas ile UI arasına güvenli alana daralan bir katman koyar; sahnedeki
+    // hazır UI (skor, Game Over paneli) ve runtime'da kurulan her şey buraya taşınır.
+    void BuildSafeAreaRoot()
+    {
+        var canvas = (RectTransform)scoreText.canvas.transform;
+
+        var go = new GameObject("SafeArea", typeof(RectTransform));
+        uiRoot = (RectTransform)go.transform;
+        uiRoot.SetParent(canvas, false);
+        go.AddComponent<SafeAreaFitter>();
+
+        // Sahnede Canvas altında duran mevcut UI'ı da güvenli alana al
+        scoreText.rectTransform.SetParent(uiRoot, false);
+        if (gameOverPanel != null)
+            gameOverPanel.transform.SetParent(uiRoot, false);
     }
 
     // Oynarken sürekli görünen, kaç kartal toplandığını gösteren küçük bir rozet —
     // Game Over kartıyla aynı görsel dil (koyu şerit + altın Anton rakam + kontur)
     void BuildPickupHud()
     {
-        var canvas = (RectTransform)scoreText.canvas.transform;
-        var chip = GameOverScreen.MakeRoundedImage("PickupChip", canvas, new Vector2(220f, 130f), new Vector2(-390f, 740f),
+        var chip = GameOverScreen.MakeRoundedImage("PickupChip", uiRoot, new Vector2(220f, 130f), Vector2.zero,
             new Color(0.078f, 0.078f, 0.078f, 0.6f));
         var chipRect = chip.rectTransform;
+        GameOverScreen.AnchorTopLeft(chipRect, 40f, 40f);
 
         GameOverScreen.MakeText("PickupLabel", chipRect, "ROZETLER", 26f, new Color(0.6f, 0.58f, 0.55f), new Vector2(0f, 32f), 6f);
         pickupHudValue = GameOverScreen.MakeText("PickupValue", chipRect, "0", 56f, Accent, new Vector2(0f, -22f), 0f, GameOverScreen.DisplayFont);
@@ -104,6 +127,34 @@ public class GameManager : MonoBehaviour
         // İsim/başlangıç ekranları sonradan eklendiği için sibling sırasında üste
         // çıkıp kutuyu gizleyebilir — rozet kutusu her zaman en önde kalsın
         chipRect.SetAsLastSibling();
+    }
+
+    // Sağ üstte, rozet kutusunun simetriği — ses aç/kapa, tercih PlayerPrefs'te kalıcı
+    void BuildMuteButton()
+    {
+        var btnImg = GameOverScreen.MakeRoundedImage("MuteButton", uiRoot, new Vector2(220f, 90f), Vector2.zero,
+            new Color(0.078f, 0.078f, 0.078f, 0.6f));
+        var btnRect = btnImg.rectTransform;
+        GameOverScreen.AnchorTopRight(btnRect, 40f, 40f);
+        btnImg.raycastTarget = true;
+        var btn = btnImg.gameObject.AddComponent<Button>();
+
+        muteLabel = GameOverScreen.MakeText("MuteLabel", btnRect, "", 26f, Color.white, Vector2.zero, 4f);
+        RefreshMuteLabel();
+
+        btn.onClick.AddListener(() =>
+        {
+            Sfx.Muted = !Sfx.Muted;
+            RefreshMuteLabel();
+        });
+
+        btnRect.SetAsLastSibling();
+    }
+
+    void RefreshMuteLabel()
+    {
+        muteLabel.text = Sfx.Muted ? "SES: KAPALI" : "SES: AÇIK";
+        muteLabel.color = Sfx.Muted ? new Color(0.6f, 0.58f, 0.55f) : Color.white;
     }
 
     void OnNameConfirmed(string name)
@@ -116,7 +167,7 @@ public class GameManager : MonoBehaviour
     void BeginStartScreen()
     {
         int best = PlayerPrefs.GetInt(HighScoreKey, 0);
-        startScreen = StartScreen.Create((RectTransform)scoreText.canvas.transform, best, supabaseConfig, Accent);
+        startScreen = StartScreen.Create(uiRoot, best, supabaseConfig, Accent, playerName);
     }
 
     void Update()
@@ -171,8 +222,7 @@ public class GameManager : MonoBehaviour
     // bildirim — hız artışı ve tema açılışı gibi anlar için ortak kullanılıyor.
     System.Collections.IEnumerator ShowToast(string message)
     {
-        var canvas = (RectTransform)scoreText.canvas.transform;
-        var t = GameOverScreen.MakeText("Toast", canvas, message, 54f, Accent, new Vector2(0f, 250f), 8f);
+        var t = GameOverScreen.MakeText("Toast", uiRoot, message, 54f, Accent, new Vector2(0f, 250f), 8f);
         GameOverScreen.ApplyOutline(t, scoreOutline, 0.2f);
         var rt = t.rectTransform;
         rt.localScale = Vector3.zero;
