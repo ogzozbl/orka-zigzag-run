@@ -144,7 +144,8 @@ public class GameOverScreen : MonoBehaviour
 
         collectedValue = MakeText("Collected", card, "0 ROZET TOPLANDI", 30f, accent, new Vector2(0f, -390f), 4f);
 
-        hint = MakeText("Hint", (RectTransform)transform, "DEVAM İÇİN DOKUN", 40f, Color.white, new Vector2(0f, -620f), 10f);
+        hint = MakeText("Hint", (RectTransform)transform, "DEVAM İÇİN DOKUN", 40f, Color.white, Vector2.zero, 10f);
+        AnchorBottom(hint.rectTransform, 220f);
     }
 
     IEnumerator Appear()
@@ -264,6 +265,37 @@ public class GameOverScreen : MonoBehaviour
         return t;
     }
 
+    // Kenar anchor'ları: sabit merkez-offset (ör. y=780) farklı en-boy oranlarında
+    // ekran dışına taşıyordu. Bunun yerine eleman ekranın üst/alt/köşe kenarına
+    // sabitlenir, sadece kenardan uzaklık verilir — her oranda aynı yerde durur.
+    public static void AnchorTop(RectTransform rt, float distanceFromTop)
+    {
+        rt.anchorMin = rt.anchorMax = new Vector2(0.5f, 1f);
+        rt.pivot = new Vector2(0.5f, 1f);
+        rt.anchoredPosition = new Vector2(0f, -distanceFromTop);
+    }
+
+    public static void AnchorBottom(RectTransform rt, float distanceFromBottom)
+    {
+        rt.anchorMin = rt.anchorMax = new Vector2(0.5f, 0f);
+        rt.pivot = new Vector2(0.5f, 0f);
+        rt.anchoredPosition = new Vector2(0f, distanceFromBottom);
+    }
+
+    public static void AnchorTopLeft(RectTransform rt, float fromLeft, float fromTop)
+    {
+        rt.anchorMin = rt.anchorMax = new Vector2(0f, 1f);
+        rt.pivot = new Vector2(0f, 1f);
+        rt.anchoredPosition = new Vector2(fromLeft, -fromTop);
+    }
+
+    public static void AnchorTopRight(RectTransform rt, float fromRight, float fromTop)
+    {
+        rt.anchorMin = rt.anchorMax = new Vector2(1f, 1f);
+        rt.pivot = new Vector2(1f, 1f);
+        rt.anchoredPosition = new Vector2(-fromRight, -fromTop);
+    }
+
     // Ekranlar arası basit geçiş: CanvasGroup alpha'sını lerp'ler. Start/Leaderboard/
     // NameEntry ekranlarının hepsi bunu paylaşıyor — tutarlı, tek yerden ayarlanan his.
     public static IEnumerator FadeCanvasGroup(CanvasGroup group, float from, float to, float duration)
@@ -301,7 +333,7 @@ public class StartScreen : MonoBehaviour
     TextMeshProUGUI prompt;
     bool dismissing;
 
-    public static StartScreen Create(RectTransform canvas, int bestScore, SupabaseConfig config, Color accent)
+    public static StartScreen Create(RectTransform canvas, int bestScore, SupabaseConfig config, Color accent, string playerName)
     {
         var root = new GameObject("StartScreen", typeof(RectTransform));
         var rootRect = (RectTransform)root.transform;
@@ -314,22 +346,26 @@ public class StartScreen : MonoBehaviour
 
         // Beyaz + koyu kontur: candy gökyüzü her renge dönse de okunaklı kalır,
         // hiçbir başlık artık tema rengini kullanmıyor — tutarlı/sakin görünüm
-        var title = GameOverScreen.MakeText("Title", rootRect, "ZIGZAG RUN", 92f, Color.white, new Vector2(0f, 780f), 6f, GameOverScreen.DisplayFont);
+        var title = GameOverScreen.MakeText("Title", rootRect, "ZIGZAG RUN", 92f, Color.white, Vector2.zero, 6f, GameOverScreen.DisplayFont);
         GameOverScreen.ApplyOutline(title, outlineColor, 0.22f);
+        GameOverScreen.AnchorTop(title.rectTransform, 240f);
 
-        var best = GameOverScreen.MakeText("Best", rootRect, $"EN İYİ {bestScore}", 38f, Color.white, new Vector2(0f, 690f), 8f);
+        var best = GameOverScreen.MakeText("Best", rootRect, $"EN İYİ {bestScore}", 38f, Color.white, Vector2.zero, 8f);
         GameOverScreen.ApplyOutline(best, outlineColor, 0.2f);
+        GameOverScreen.AnchorTop(best.rectTransform, 340f);
 
         // Liste artık gömülü değil — ayrı bir sayfa gibi açılır (SIRALAMA butonu)
-        var rankBtnImg = GameOverScreen.MakeRoundedImage("RankButton", rootRect, new Vector2(320f, 90f), new Vector2(0f, 560f), new Color(1f, 1f, 1f, 0.1f));
+        var rankBtnImg = GameOverScreen.MakeRoundedImage("RankButton", rootRect, new Vector2(320f, 90f), Vector2.zero, new Color(1f, 1f, 1f, 0.1f));
+        GameOverScreen.AnchorTop(rankBtnImg.rectTransform, 420f);
         rankBtnImg.raycastTarget = true;
         var rankBtn = rankBtnImg.gameObject.AddComponent<Button>();
         var rankLabel = GameOverScreen.MakeText("RankLabel", rankBtnImg.rectTransform, "SIRALAMA", 34f, accent, Vector2.zero, 6f, GameOverScreen.DisplayFont);
         rankLabel.raycastTarget = false;
-        rankBtn.onClick.AddListener(() => LeaderboardOverlay.Show(canvas, config, accent));
+        rankBtn.onClick.AddListener(() => LeaderboardOverlay.Show(canvas, config, accent, playerName));
 
-        var prompt = GameOverScreen.MakeText("Prompt", rootRect, "BAŞLAMAK İÇİN DOKUN", 48f, Color.white, new Vector2(0f, -760f), 10f);
+        var prompt = GameOverScreen.MakeText("Prompt", rootRect, "BAŞLAMAK İÇİN DOKUN", 48f, Color.white, Vector2.zero, 10f);
         GameOverScreen.ApplyOutline(prompt, outlineColor, 0.2f);
+        GameOverScreen.AnchorBottom(prompt.rectTransform, 200f);
 
         var screen = root.AddComponent<StartScreen>();
         screen.group = group;
@@ -501,7 +537,7 @@ public class LeaderboardOverlay : MonoBehaviour
     CanvasGroup group;
     bool closing;
 
-    public static void Show(RectTransform canvas, SupabaseConfig config, Color accent)
+    public static void Show(RectTransform canvas, SupabaseConfig config, Color accent, string playerName)
     {
         GameManager.InputLocked = true;
 
@@ -517,11 +553,13 @@ public class LeaderboardOverlay : MonoBehaviour
         var dim = GameOverScreen.MakeImage("Dim", rootRect, new Vector2(4000f, 4000f), Vector2.zero, new Color(0.102f, 0.102f, 0.102f, 0.92f));
         dim.raycastTarget = true;
 
-        GameOverScreen.MakeText("Header", rootRect, "SIRALAMA", 60f, Color.white, new Vector2(0f, 780f), 6f, GameOverScreen.DisplayFont);
+        var header = GameOverScreen.MakeText("Header", rootRect, "SIRALAMA", 60f, Color.white, Vector2.zero, 6f, GameOverScreen.DisplayFont);
+        GameOverScreen.AnchorTop(header.rectTransform, 150f);
 
-        LeaderboardPanel.Create(rootRect, config, accent);
+        LeaderboardPanel.Create(rootRect, config, accent, playerName);
 
-        var backImg = GameOverScreen.MakeRoundedImage("BackButton", rootRect, new Vector2(280f, 90f), new Vector2(0f, -780f), new Color(1f, 1f, 1f, 0.1f));
+        var backImg = GameOverScreen.MakeRoundedImage("BackButton", rootRect, new Vector2(280f, 90f), Vector2.zero, new Color(1f, 1f, 1f, 0.1f));
+        GameOverScreen.AnchorBottom(backImg.rectTransform, 150f);
         backImg.raycastTarget = true;
         var backBtn = backImg.gameObject.AddComponent<Button>();
         var backLabel = GameOverScreen.MakeText("BackLabel", backImg.rectTransform, "GERİ", 34f, Color.white, Vector2.zero, 6f, GameOverScreen.DisplayFont);
@@ -561,10 +599,12 @@ public class LeaderboardPanel : MonoBehaviour
     TextMeshProUGUI[] rowRankTexts;
     TextMeshProUGUI[] rowNameTexts;
     TextMeshProUGUI[] rowScoreTexts;
+    Image[] rowImages;
     TextMeshProUGUI status;
     Color accent;
+    string myName;
 
-    public static LeaderboardPanel Create(RectTransform parent, SupabaseConfig config, Color accent)
+    public static LeaderboardPanel Create(RectTransform parent, SupabaseConfig config, Color accent, string playerName)
     {
         const float rowH = 72f, panelW = 620f;
         float panelH = rows * rowH + 40f;
@@ -582,10 +622,12 @@ public class LeaderboardPanel : MonoBehaviour
 
         var panel = root.AddComponent<LeaderboardPanel>();
         panel.accent = accent;
+        panel.myName = playerName;
         panel.rowRoots = new RectTransform[rows];
         panel.rowRankTexts = new TextMeshProUGUI[rows];
         panel.rowNameTexts = new TextMeshProUGUI[rows];
         panel.rowScoreTexts = new TextMeshProUGUI[rows];
+        panel.rowImages = new Image[rows];
 
         float top = panelH / 2f - rowH / 2f - 10f;
         for (int i = 0; i < rows; i++)
@@ -598,6 +640,7 @@ public class LeaderboardPanel : MonoBehaviour
                                  : (i % 2 == 0 ? new Color(1f, 1f, 1f, 0.03f) : Color.clear);
             var rowImg = GameOverScreen.MakeRoundedImage($"Row{i}", rootRect, new Vector2(panelW - 24f, rowH - 8f), new Vector2(0f, y), rowBg);
             panel.rowRoots[i] = rowImg.rectTransform;
+            panel.rowImages[i] = rowImg;
 
             Color txt = first ? accent : Color.white;
             var rank = GameOverScreen.MakeText("Rank", rowImg.rectTransform, "", 32f, first ? accent : labelGray, new Vector2(-panelW / 2f + 55f, 0f), 0f, GameOverScreen.DisplayFont);
@@ -636,10 +679,21 @@ public class LeaderboardPanel : MonoBehaviour
         {
             var e = entries[i];
             string name = string.IsNullOrEmpty(e.player_name) ? "—" : e.player_name;
+            bool isMe = !string.IsNullOrEmpty(myName) && string.Equals(name, myName, System.StringComparison.OrdinalIgnoreCase);
+
             rowRankTexts[i].text = (i + 1).ToString();
-            rowNameTexts[i].text = name;
+            rowNameTexts[i].text = isMe ? $"{name} (SEN)" : name;
             rowScoreTexts[i].text = e.score.ToString();
             rowRoots[i].gameObject.SetActive(true);
+
+            // Kendi satırını bul: 1. sıra zaten aksan renkli, kendi satırın da (ilk sıra
+            // değilse) aksan tonuyla vurgulanır — 10 satır içinde kendini aramaya gerek kalmaz
+            if (isMe && i != 0)
+            {
+                rowImages[i].color = new Color(accent.r, accent.g, accent.b, 0.22f);
+                rowNameTexts[i].color = accent;
+                rowScoreTexts[i].color = accent;
+            }
         }
     }
 }

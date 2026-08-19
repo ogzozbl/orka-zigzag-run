@@ -9,19 +9,30 @@ public class WallColorCycler : MonoBehaviour
     [System.Serializable]
     public struct ColorTheme
     {
-        public Color ground;
         public Color skyTop;
         public Color skyHorizon;
         public Color skyBottom;
         public Color fog;
 
-        public ColorTheme(Color ground, Color skyTop, Color skyHorizon, Color skyBottom, Color fog)
+        public ColorTheme(Color skyTop, Color skyHorizon, Color skyBottom, Color fog)
         {
-            this.ground = ground;
             this.skyTop = skyTop;
             this.skyHorizon = skyHorizon;
             this.skyBottom = skyBottom;
             this.fog = fog;
+        }
+
+        // Yol rengi artık hardcoded değil — skyHorizon'dan türetilir: aynı hue (tema
+        // ailesiyle uyumlu), ama sabit açık/pastel Value+Saturation. Böylece hem
+        // parlama riski (HDR doyma) kontrol altında kalır hem her yeni tema otomatik
+        // uyumlu bir yol rengi alır, elle ayarlanan ground hex'i gerekmez.
+        public Color Ground
+        {
+            get
+            {
+                Color.RGBToHSV(skyHorizon, out float h, out float s, out _);
+                return Color.HSVToRGB(h, Mathf.Max(s * 0.55f, 0.12f), 0.9f);
+            }
         }
     }
 
@@ -35,18 +46,21 @@ public class WallColorCycler : MonoBehaviour
     // ile uyumsuzdu; yerine bordonun daha koyu bir kuzeni olan "Rose Ember" geldi.
     public ColorTheme[] themes = new ColorTheme[]
     {
+        // Zeminler bilerek tam beyaz değil (~0.88): tam beyaza yakın olunca ışıkla
+        // çarpıp HDR'de doyuyor ve bloom yolu beyaz bir lekeye çeviriyordu. Bu tonda
+        // hem tema rengi okunuyor hem parlama eşiğine girmiyor.
         // Grape Royale
         new ColorTheme(
-            HexColor("#F3E9F5"), HexColor("#3B1F8F"), HexColor("#FF4FA3"), HexColor("#230F52"), HexColor("#FF4FA3")),
+            HexColor("#3B1F8F"), HexColor("#FF4FA3"), HexColor("#230F52"), HexColor("#FF4FA3")),
         // Rose Ember
         new ColorTheme(
-            HexColor("#FBEAEA"), HexColor("#5C1A2E"), HexColor("#FF6F91"), HexColor("#2B0A14"), HexColor("#FF6F91")),
+            HexColor("#5C1A2E"), HexColor("#FF6F91"), HexColor("#2B0A14"), HexColor("#FF6F91")),
         // Citrus Sunset
         new ColorTheme(
-            HexColor("#FFEEDD"), HexColor("#B23A6B"), HexColor("#FFB13C"), HexColor("#3D1642"), HexColor("#FFB13C")),
+            HexColor("#B23A6B"), HexColor("#FFB13C"), HexColor("#3D1642"), HexColor("#FFB13C")),
         // Altın Kartal — kilitli başlar, yeterince rozet toplanınca açılır (GameManager.UnlockGoldTheme)
         new ColorTheme(
-            HexColor("#FBF3E3"), HexColor("#6B4A18"), HexColor("#FFD166"), HexColor("#2E1F0A"), HexColor("#FFD166")),
+            HexColor("#6B4A18"), HexColor("#FFD166"), HexColor("#2E1F0A"), HexColor("#FFD166")),
     };
 
     // Son tema (Altın Kartal) kilitli başlar — döngüye dahil olmaz ta ki açılana kadar
@@ -136,7 +150,7 @@ public class WallColorCycler : MonoBehaviour
         ColorTheme target = themes[themeIndex];
         float k = transitionSpeed * Time.deltaTime;
 
-        groundMat.color = Color.Lerp(groundMat.color, target.ground, k);
+        groundMat.color = Color.Lerp(groundMat.color, target.Ground, k);
         RenderSettings.fogColor = Color.Lerp(RenderSettings.fogColor, target.fog, k);
         if (skyMat != null)
         {
@@ -145,7 +159,7 @@ public class WallColorCycler : MonoBehaviour
             skyMat.SetColor("_BottomColor", Color.Lerp(skyMat.GetColor("_BottomColor"), target.skyBottom, k));
         }
 
-        if (Vector4.Distance(groundMat.color, target.ground) < 0.02f)
+        if (Vector4.Distance(groundMat.color, target.Ground) < 0.02f)
         {
             themeIndex = (themeIndex + 1) % activeThemeCount;
             transitioning = false;
